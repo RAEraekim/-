@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부치고 - 고깃집·정육점 실무 마진 및 수율 계산기</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darknavy: '#0F172A',
+                        carddark: '#1E293B',
+                        burntorange: '#EA580C',
+                        burntorangehover: '#C2410C',
+                        charcoal: '#334155'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-darknavy text-slate-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="bg-carddark border-b border-slate-800 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-burntorange text-white p-2 rounded-xl font-bold tracking-wider text-xl shadow-lg">
+                    🥩 부치고
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg tracking-tight text-white">정육점 실무 마진·수율 매니저</h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">고깃집·정육점 점주를 위한 전문 원가 및 기록 관리 툴</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-burntorange border border-burntorange/20">
+                    Pro Calculator v1.0
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Calculators (Span 7) -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Mode Switcher -->
+            <div class="flex rounded-xl bg-carddark p-1.5 border border-slate-800">
+                <button id="tab-margin" onclick="switchTab('margin')" class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-burntorange text-white shadow">
+                    실원가 & 마진 계산기
+                </button><button id="tab-portion" onclick="switchTab('portion')" class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white">
+                    소분 단가 환산기
+                </button>
+            </div>
+
+            <!-- TAB 1: Real Cost & Margin Calculator -->
+            <div id="section-margin" class="bg-carddark border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+                <div class="border-b border-slate-800 pb-3">
+                    <h2 class="text-lg font-bold text-white flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-burntorange mr-2"></span>
+                        실원가 및 수율 반영 마진 계산
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">로스율(지방·뼈 등)과 부대비용을 반영한 정확한 실질 판매 마진을 산출합니다.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Meat Name -->
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">상품명 / 부위명</label>
+                        <input type="text" id="m-name" placeholder="예: 한돈 삼겹살 (박스단위)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-burntorange transition">
+                    </div>
+                    <!-- Purchase Price -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">총 매입가 (원)</label>
+                        <input type="number" id="m-total-price" placeholder="150000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-burntorange transition" oninput="calculateMargin()">
+                    </div>
+                    <!-- Purchase Weight -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">총 매입 중량 (kg)</label>
+                        <input type="number" id="m-total-weight" placeholder="10" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-burntorange transition" oninput="calculateMargin()">
+                    </div>
+                    <!-- Loss Rate -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">손실율 (로스율, %)</label>
+                        <input type="number" id="m-loss-rate" placeholder="15" step="1" value="15" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-burntorange transition" oninput="calculateMargin()">
+                    </div>
+                    <!-- Selling Price per kg -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">판매 단가 (1kg 당, 원)</label>
+                        <input type="number" id="m-sell-price" placeholder="28000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-burntorange transition" oninput="calculateMargin()">
+                    </div>
+                </div>
+
+                <!-- Margin Live Result Card -->
+                <div class="bg-slate-900/80 border border-slate-700/60 rounded-xl p-4 sm:p-5 mt-4 space-y-3">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-400">정미 중량 (실판매 가능 중량):</span>
+                        <span id="res-net-weight" class="font-semibold text-white">0.0 kg</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-400">실제 원가 (kg당 실원가):</span>
+                        <span id="res-real-cost" class="font-semibold text-white">0 원</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-400">예상 총 매출액:</span>
+                        <span id="res-total-revenue" class="font-semibold text-white">0 원</span>
+                    </div>
+                    <div class="border-t border-slate-800 pt-3 flex justify-between items-center">
+                        <span class="font-bold text-white">예상 순수익 / 마진율:</span>
+                        <div class="text-right">
+                            <span id="res-profit" class="font-bold text-burntorange text-lg">0 원</span>
+                            <span id="res-margin-rate" class="text-xs font-semibold block text-emerald-400">(0.0%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="saveRecord('margin')" class="w-full bg-burntorange hover:bg-burntorangehover text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-lg flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>계산 결과 기록장에 저장하기</span>
+                </button>
+            </div>
+
+            <!-- TAB 2: Portion Unit Calculator -->
+            <div id="section-portion" class="bg-carddark border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5 hidden">
+                <div class="border-b border-slate-800 pb-3">
+                    <h2 class="text-lg font-bold text-white flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-burntorange mr-2"></span>
+                        소분 단가 환산 계산기 (100g ~ 500g)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">진공팩 포장 및 소분 판매 시 단위별 최적 권장 판매가를 한눈에 산출합니다.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">품목명 / 소분 상품명</label>
+                        <input type="text" id="p-name" placeholder="예: 한우 등심 1등급 소분팩" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-burntorange transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">1kg 기준 판매 희망가 (원)</label>
+                        <input type="number" id="p-price-per-kg" placeholder="65000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-burntorange transition" oninput="calculatePortion()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">포장재 및 부대비용 (팩당, 원)</label>
+                        <input type="number" id="p-pack-cost" placeholder="300" value="300" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-burntorange transition" oninput="calculatePortion()">
+                    </div>
+                </div>
+
+                <!-- Portion Live Result Grid -->
+                <div class="grid grid-cols-3 gap-3 pt-2">
+                    <div class="bg-slate-900 border border-slate-700/60 p-3.5 rounded-xl text-center">
+                        <span class="block text-xs text-slate-400 font-medium">100g 단가</span>
+                        <span id="portion-100g" class="text-base sm:text-lg font-bold text-white mt-1 block">0원</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-700/60 p-3.5 rounded-xl text-center">
+                        <span class="block text-xs text-slate-400 font-medium">200g 단가</span>
+                        <span id="portion-200g" class="text-base sm:text-lg font-bold text-white mt-1 block">0원</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-700/60 p-3.5 rounded-xl text-center">
+                        <span class="block text-xs text-slate-400 font-medium">300g 단가</span>
+                        <span id="portion-300g" class="text-base sm:text-lg font-bold text-white mt-1 block">0원</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-700/60 p-3.5 rounded-xl text-center">
+                        <span class="block text-xs text-slate-400 font-medium">400g 단가</span>
+                        <span id="portion-400g" class="text-base sm:text-lg font-bold text-white mt-1 block">0원</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-700/60 p-3.5 rounded-xl text-center col-span-2 sm:col-span-2">
+                        <span class="block text-xs text-slate-400 font-medium">500g (반근) 단가</span>
+                        <span id="portion-500g" class="text-base sm:text-lg font-bold text-burntorange mt-1 block">0원</span>
+                    </div>
+                </div>
+
+                <button onclick="saveRecord('portion')" class="w-full bg-burntorange hover:bg-burntorangehover text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-lg flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>소분 계산 결과 기록장에 저장하기</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Right Column: History & Export Manager (Span 5) -->
+        <div class="lg:col-span-5 flex flex-col space-y-6">
+            <div class="bg-carddark border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex-grow flex flex-col">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>
+                            계산 기록 관리소
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">저장된 내역을 확인하고 엑셀로 내보내세요.</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-400 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 transition">전체 삭제</button>
+                    </div>
+                </div>
+
+                <!-- History Table / List Container -->
+                <div id="history-container" class="flex-grow overflow-y-auto max-h-[420px] space-y-3 pr-1">
+                    <!-- Dynamic Items will appear here -->
+                    <div id="empty-history" class="text-center py-12 text-slate-500 text-sm">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        저장된 계산 기록이 없습니다.<br>왼쪽에서 계산 후 저장해 보세요!
+                    </div>
+                </div>
+
+                <!-- Export CSV Button -->
+                <div class="pt-4 border-t border-slate-800 mt-4">
+                    <button onclick="exportToCSV()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-lg flex items-center justify-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span>엑셀(CSV) 파일로 내보내기</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-carddark border-t border-slate-800 py-6 text-center text-xs text-slate-500 mt-auto">
+        <p>&copy; 2026 부치고(ButchGo) 정육점 실무 솔루션. All rights reserved.</p>
+        <p class="mt-1">고깃집·정육점 사장님들의 스마트한 원가 관리를 응원합니다.</p>
+    </footer>
+
+    <!-- Custom Modal for Notifications -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-carddark border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl">
+            <h3 id="modal-title" class="text-lg font-bold text-white">알림</h3>
+            <p id="modal-message" class="text-sm text-slate-300"></p>
+            <button onclick="closeModal()" class="w-full bg-burntorange text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-burntorangehover transition">확인</button>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let historyData = JSON.parse(localStorage.getItem('butchgo_history')) || [];
+
+        function showModal(title, message) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function switchTab(tab) {
+            const btnMargin = document.getElementById('tab-margin');
+            const btnPortion = document.getElementById('tab-portion');
+            const secMargin = document.getElementById('section-margin');
+            const secPortion = document.getElementById('section-portion');
+
+            if (tab === 'margin') {
+                btnMargin.className = "flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-burntorange text-white shadow";
+                btnPortion.className = "flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white";
+                secMargin.classList.remove('hidden');
+                secPortion.classList.add('hidden');
+            } else {
+                btnPortion.className = "flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-burntorange text-white shadow";
+                btnMargin.className = "flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white";
+                secPortion.classList.remove('hidden');
+                secMargin.classList.add('hidden');
+            }
+        }
+
+        function calculateMargin() {
+            const totalP = parseFloat(document.getElementById('m-total-price').value) || 0;
+            const totalW = parseFloat(document.getElementById('m-total-weight').value) || 0;
+            const lossR = parseFloat(document.getElementById('m-loss-rate').value) || 0;
+            const sellP = parseFloat(document.getElementById('m-sell-price').value) || 0;
+
+            if (totalW <= 0 || totalP <= 0) {
+                document.getElementById('res-net-weight').innerText = "0.0 kg";
+                document.getElementById('res-real-cost').innerText = "0 원";
+                document.getElementById('res-total-revenue').innerText = "0 원";
+                document.getElementById('res-profit').innerText = "0 원";
+                document.getElementById('res-margin-rate').innerText = "(0.0%)";
+                return null;
+            }
+
+            // Net Weight after loss
+            const netWeight = totalW * (1 - (lossR / 100));
+            // Real cost per kg of usable meat
+            const realCostPerKg = netWeight > 0 ? totalP / netWeight : 0;
+            // Total Revenue if all net weight sold at sellPrice
+            const totalRevenue = netWeight * sellP;
+            // Expected Profit
+            const profit = totalRevenue - totalP;
+            // Margin rate against revenue
+            const marginRate = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+
+            document.getElementById('res-net-weight').innerText = netWeight.toFixed(2) + " kg";
+            document.getElementById('res-real-cost').innerText = Math.round(realCostPerKg).toLocaleString() + " 원";
+            document.getElementById('res-total-revenue').innerText = Math.round(totalRevenue).toLocaleString() + " 원";
+            document.getElementById('res-profit').innerText = Math.round(profit).toLocaleString() + " 원";
+            document.getElementById('res-margin-rate').innerText = "(" + marginRate.toFixed(1) + "%)";
+
+            return {
+                netWeight,
+                realCostPerKg,
+                totalRevenue,
+                profit,
+                marginRate
+            };
+        }
+
+        function calculatePortion() {
+            const pricePerKg = parseFloat(document.getElementById('p-price-per-kg').value) || 0;
+            const packCost = parseFloat(document.getElementById('p-pack-cost').value) || 0;
+
+            const c100 = (pricePerKg * 0.1) + packCost;
+            const c200 = (pricePerKg * 0.2) + packCost;
+            const c300 = (pricePerKg * 0.3) + packCost;
+            const c400 = (pricePerKg * 0.4) + packCost;
+            const c500 = (pricePerKg * 0.5) + packCost;
+
+            document.getElementById('portion-100g').innerText = Math.round(c100).toLocaleString() + "원";
+            document.getElementById('portion-200g').innerText = Math.round(c200).toLocaleString() + "원";
+            document.getElementById('portion-300g').innerText = Math.round(c300).toLocaleString() + "원";
+            document.getElementById('portion-400g').innerText = Math.round(c400).toLocaleString() + "원";
+            document.getElementById('portion-500g').innerText = Math.round(c500).toLocaleString() + "원";
+
+            return { c100, c200, c300, c400, c500 };
+        }
+
+        function saveRecord(type) {
+            const dateStr = new Date().toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            
+            if (type === 'margin') {
+                const name = document.getElementById('m-name').value.trim() || '무명 마진 상품';
+                const totalP = document.getElementById('m-total-price').value;
+                const totalW = document.getElementById('m-total-weight').value;
+                const sellP = document.getElementById('m-sell-price').value;
+                const calc = calculateMargin();
+
+                if (!calc || totalP === '' || totalW === '' || sellP === '') {
+                    showModal('입력 오류', '모든 필수 매입 및 판매 정보를 올바르게 입력해주세요.');
+                    return;
+                }
+
+                const item = {
+                    id: Date.now(),
+                    date: dateStr,
+                    type: '마진계산',
+                    name: name,
+                    summary: `매입 ${parseInt(totalP).toLocaleString()}원 / 판매단가 ${parseInt(sellP).toLocaleString()}원`,
+                    result: `순수익: ${Math.round(calc.profit).toLocaleString()}원 (${calc.marginRate.toFixed(1)}%)`
+                };
+
+                historyData.unshift(item);
+            } else {
+                const name = document.getElementById('p-name').value.trim() || '무명 소분 상품';
+                const priceKg = document.getElementById('p-price-per-kg').value;
+                const calc = calculatePortion();
+
+                if (priceKg === '' || parseFloat(priceKg) <= 0) {
+                    showModal('입력 오류', '1kg 기준 판매 희망가를 입력해주세요.');
+                    return;
+                }
+
+                const item = {
+                    id: Date.now(),
+                    date: dateStr,
+                    type: '소분단가',
+                    name: name,
+                    summary: `1kg 기준가: ${parseInt(priceKg).toLocaleString()}원`,
+                    result: `500g 반근 단가: ${Math.round(calc.c500).toLocaleString()}원`
+                };
+
+                historyData.unshift(item);
+            }
+
+            localStorage.setItem('butchgo_history', JSON.stringify(historyData));
+            renderHistory();
+            showModal('저장 완료', '계산 결과가 성공적으로 기록장에 저장되었습니다.');
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            
+            if (historyData.length === 0) {
+                container.innerHTML = `
+                    <div id="empty-history" class="text-center py-12 text-slate-500 text-sm">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        저장된 계산 기록이 없습니다.<br>왼쪽에서 계산 후 저장해 보세요!
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            historyData.forEach(item => {
+                const badgeColor = item.type === '마진계산' ? 'bg-orange-500/10 text-burntorange border-burntorange/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+                html += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 flex flex-col space-y-1.5 transition hover:border-slate-700">
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${badgeColor}">
+                                ${item.type}
+                            </span>
+                            <span class="text-[11px] text-slate-400">${item.date}</span>
+                        </div>
+                        <div class="font-bold text-sm text-white">${item.name}</div>
+                        <div class="text-xs text-slate-400">${item.summary}</div>
+                        <div class="text-xs font-semibold text-emerald-400 pt-1 border-t border-slate-800 flex justify-between items-center">
+                            <span>${item.result}</span>
+                            <button onclick="deleteItem(${item.id})" class="text-slate-500 hover:text-red-400 text-xs px-1.5 py-0.5">삭제</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function deleteItem(id) {
+            historyData = historyData.filter(item => item.id !== id);
+            localStorage.setItem('butchgo_history', JSON.stringify(historyData));
+            renderHistory();
+        }
+
+        function clearHistory() {
+            if (historyData.length === 0) return;
+            historyData = [];
+            localStorage.removeItem('butchgo_history');
+            renderHistory();
+            showModal('초기화 완료', '모든 기록이 삭제되었습니다.');
+        }
+
+        function exportToCSV() {
+            if (historyData.length === 0) {
+                showModal('내보내기 불가', '내보낼 계산 기록이 존재하지 않습니다.');
+                return;
+            }
+
+            // CSV Header with BOM for Excel Korean support
+            let csvContent = "\uFEFF일시,유형,상품명,상세정보,결과요약\n";
+
+            historyData.forEach(item => {
+                const row = [
+                    `"${item.date}"`,
+                    `"${item.type}"`,
+                    `"${item.name.replace(/"/g, '""')}"`,
+                    `"${item.summary.replace(/"/g, '""')}"`,
+                    `"${item.result.replace(/"/g, '""')}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `부치고_정육계산기록_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            renderHistory();
+        };
+    </script>
+</body>
+</html>
